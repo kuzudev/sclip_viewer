@@ -1,0 +1,6 @@
+tqdm
+pillow
+opencv-python
+gradio
+ftfy
+regex

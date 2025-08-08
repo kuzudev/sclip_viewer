@@ -4,12 +4,12 @@ import gc
 import typing as ty
 
 from tqdm import tqdm
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ExifTags
 import numpy as np
 import torch
 import cv2
 
-from clip_interactively.segm import CLIPForSegmentation
+from sclip_viewer.segm import CLIPForSegmentation
 
 
 def get_image_paths(dir_path, exts=('.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff', '.webp')):
@@ -101,7 +101,7 @@ def save_colored_mask(
     
     # Save
     res = Image.fromarray(color_mask)
-    res = res.transpose(Image.ROTATE_270)
+    #res = res.transpose(Image.ROTATE_270)
     res.save(save_path)
     print(f"Saved colored mask to {save_path}")
 
@@ -153,16 +153,39 @@ def overlay_mask_on_image(
 
     # 6) Save result
     res = Image.fromarray(out)
-    res = res.transpose(Image.ROTATE_270)
+    #res = res.transpose(Image.ROTATE_270)
     res.save(save_path)
     print(f"Saved overlay to {save_path}")
 
 
+def exif_transpose(img: Image.Image) -> Image.Image:
+    try:
+        exif = img._getexif()
+        if exif is None:
+            return img
+        exif = dict(exif.items())
+        orientation = None
+        for k, v in ExifTags.TAGS.items():
+            if v == "Orientation":
+                orientation = k
+                break
+        if orientation and orientation in exif:
+            if exif[orientation] == 3:
+                img = img.rotate(180, expand=True)
+            elif exif[orientation] == 6:
+                img = img.rotate(270, expand=True)
+            elif exif[orientation] == 8:
+                img = img.rotate(90, expand=True)
+    except Exception as e:
+        print(f"EXIF correction failed: {e}")
+    return img
+    
+
 if __name__ == '__main__':
 
-    input_dir_path = 'tmp5'
+    input_dir_path = 'images/tmp5'
 
-    save_path = 'tmp5_segm_res'
+    save_path = 'images/tmp5_segm_res'
     os.makedirs(save_path, exist_ok=True)
 
     # class_names = [
@@ -180,30 +203,44 @@ if __name__ == '__main__':
     #     'anime'
     # ]
 
+    # class_names = [
+    #     'background',
+    #     'cat',
+    #     'waterfall',
+    #     'water',
+    #     'conifers',
+    #     'car',
+    #     'human',
+    #     'road sign',
+    #     'tree',
+    #     'bush',
+    #     'sky',
+    #     'house with unusual (ex. blue) color',
+    #     'house with ordinary color',
+    #     'bridge',
+    #     'dish',
+    #     'plate',
+    #     'bread',
+    #     'fruit or berries',
+    #     'grass',
+    #     'ground',
+    #     'cactus'
+    # ]
+
     class_names = [
         'background',
         'cat',
-        'waterfall',
-        'water',
-        'conifers',
-        'car',
-        'human',
-        'road sign',
+        'person',
         'tree',
-        'bush',
-        'sky',
-        'house with unusual (ex. blue) color',
-        'house with ordinary color',
-        'bridge',
-        'dish',
-        'plate',
-        'bread',
-        'fruit or berries',
-        'grass',
-        'ground',
-        'cactus'
+        'eat',
+        'sky'
     ]
-    size = (896, 2048)
+
+    #size = (896, 2048)
+    #size = (560, 2048)
+
+    size = (2048, 560)
+    #size = (2048, 1280)
 
     #class_names_with_backgr = ['background'] + class_names
     map_cls_ind_to_color = get_color_map(class_names)
@@ -225,9 +262,10 @@ if __name__ == '__main__':
         name_wo_ext = os.path.splitext(base_name)[0]
     
         raw_image = Image.open(image_path)
+        raw_image = exif_transpose(raw_image)
         print(f"Input image shape: {raw_image.size}")
         try:
-            prep_image = model.data_preprocessor(raw_image)
+            image_resized, prep_image = model.data_preprocessor(raw_image)
         except IndexError:
             continue
         tensor = torch.unsqueeze(prep_image, dim=0).to(device)
@@ -252,7 +290,7 @@ if __name__ == '__main__':
         # print(f"Class ind: {class_ind}")
 
         overlay_mask_on_image(
-            img=raw_image, 
+            img=image_resized, 
             mask_tensor=seg_pred,
             class_names=class_names,
             colormap=map_cls_ind_to_color,

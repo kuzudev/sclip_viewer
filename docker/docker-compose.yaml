@@ -1,0 +1,26 @@
+services:
+
+  image_encoder:
+    command: tail -f /dev/null
+    #command: python -u run.py
+    image: sclip_demo:latest
+    container_name: sclip_demo_cont
+
+    shm_size: 8g
+    ports:
+      - "7770:7770"
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    
+    working_dir: /workdir
+    volumes:
+      - ../:/workdir
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            device_ids: ['0']
+            capabilities: [gpu]

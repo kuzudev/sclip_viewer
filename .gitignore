@@ -4,3 +4,5 @@ __pycache__
 *.ipynb
 old_scripts
 try_class.py
+
+try_segm.py
