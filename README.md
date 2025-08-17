@@ -1,5 +1,5 @@
 # SCLIP Viewer
 
-https://github.com/wangf3014/SCLIP
+Code of Hugging Face Space to play with [SCLIP](https://github.com/wangf3014/SCLIP) interactively.
 
-https://arxiv.org/pdf/2312.01597v4
+See also [some basics about SCLIP](https://kuzudev.github.io/articles/sclip.html).
