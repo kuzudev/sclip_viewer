@@ -99,7 +99,7 @@ def get_interface():
         with gr.Row():
 
             with gr.Column():
-                input_image = gr.Image(type="pil", label="Input image", width=450, height=650) # TODO: add examples
+                
                 class_names_str = gr.Textbox(
                     value="cat",
                     label="Class names (semicolon separated)", 
@@ -116,15 +116,16 @@ def get_interface():
                 area_thd = gr.Slider(0, 0.2, step=0.05, value=0, label="Area threshold")
                 use_template = gr.Checkbox(label="Use template")
 
-                btn = gr.Button("Run")
+            input_image = gr.Image(type="pil", label="Input image", width=450, height=650)
 
-            with gr.Column():
-                examples = gr.Examples(
-                    examples=examples_values,
-                    inputs=[input_image, class_names_str, image_max_width, image_max_height],
-                    label="Examples",
-                    examples_per_page=8
-                )
+            examples = gr.Examples(
+                examples=examples_values,
+                inputs=[input_image, class_names_str, image_max_width, image_max_height],
+                label="Examples",
+                examples_per_page=8
+            )
+
+        btn = gr.Button("Run")
 
         with gr.Row():
             out_img = gr.Image(label="Output image")
