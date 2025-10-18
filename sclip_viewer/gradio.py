@@ -1,4 +1,6 @@
 from pprint import pprint
+import os, json
+from pathlib import Path
 
 import gradio as gr
 from PIL import Image
@@ -69,8 +71,25 @@ def segment_image(
     return resulting_image, resulting_mask, classes_legend_image
 
 
-# gradio_examples_path = './gradio_examples'
-# exmpls_paths = get_image_paths(f"{gradio_examples_path}")[:]
+def get_images_paths(folder_path: str) -> list[str]:
+    image_extensions = (".jpg", ".png", ".jpeg", ".JPG", ".PNG", ".JPEG")
+    return [f"{folder_path}/{file}" for file in os.listdir(folder_path) if file.endswith(image_extensions)]
+
+
+gradio_examples_path = './sclip_viewer/images'
+exmpls_paths = get_images_paths(f"{gradio_examples_path}")
+with open(f"{gradio_examples_path}/args_map.json", "r", encoding="utf-8") as f:
+        name2args = json.load(f)
+
+examples_values = []
+for p in exmpls_paths:
+    curr_args = name2args.get(Path(p).name)
+    examples_values.append([
+        p, 
+        curr_args['class_names_str'], 
+        curr_args['image_max_width'], 
+        curr_args['image_max_height']
+    ])
 
 
 def get_interface():
@@ -86,11 +105,11 @@ def get_interface():
                     label="Class names (semicolon separated)", 
                     placeholder="cat; purple bird;  ..."
                 )
-                image_max_width = gr.Number(label="Width (px)", value=2048, minimum=448)
-                image_max_height = gr.Number(label="Height (px)", value=560, minimum=448)
+                image_max_width = gr.Number(label="Width (px)", value=512, minimum=448)
+                image_max_height = gr.Number(label="Height (px)", value=1024, minimum=448)
                 conf_pixel = gr.Slider(0, 1, step=0.01, value=0.5, label="Confidence pixel threshold")
                 logit_scale = gr.Slider(1, 200, step=1, value=95, label="Logit scale")
-                pamr_num_iter = gr.Number(value=0, label="PAMR num_iter", minimum=0)
+                pamr_num_iter = gr.Number(value=2, label="PAMR num_iter", minimum=0)
                 pamr_dilations_str = gr.Textbox(value="8, 16", label="PAMR dilations (comma separated)", placeholder="8, 16")
                 slide_stride = gr.Slider(28, 280, step=28, value=112, label="Slide stride")
                 slide_crop = gr.Slider(112, 672, step=112, value=224, label="Slide crop size")
@@ -98,18 +117,19 @@ def get_interface():
                 use_template = gr.Checkbox(label="Use template")
 
                 btn = gr.Button("Run")
-            
+
             with gr.Column():
-                out_img = gr.Image(label="Output image")
-                out_mask = gr.Image(label="Output mask")
-                cls_leg = gr.Image(label="Classes legend")
-            
-            # examples = gr.Examples(
-            #     examples=exmpls_paths,
-            #     inputs=[input_image, class_names_str],
-            #     label="Examples",
-            #     examples_per_page=8
-            # )
+                examples = gr.Examples(
+                    examples=examples_values,
+                    inputs=[input_image, class_names_str, image_max_width, image_max_height],
+                    label="Examples",
+                    examples_per_page=8
+                )
+
+        with gr.Row():
+            out_img = gr.Image(label="Output image")
+            out_mask = gr.Image(label="Output mask")
+            cls_leg = gr.Image(label="Classes legend")
 
         btn.click(
             segment_image,

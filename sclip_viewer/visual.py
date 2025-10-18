@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw, ImageFont, ExifTags
 import numpy as np
 import torch
+from colorsys import hsv_to_rgb
 
 
 def get_color_map(classes_names: list[str]) -> dict[str, tuple[int, int, int]]:
@@ -11,7 +12,10 @@ def get_color_map(classes_names: list[str]) -> dict[str, tuple[int, int, int]]:
         if idx == 0:
             map_cls_ind_to_color[idx] = (0, 0, 0)
         else:
-            map_cls_ind_to_color[idx] = tuple(int(x) for x in rng.randint(0, 256, size=3))
+            h = (0.11 + idx * 0.61803398875) % 1.0  # golden ratio step
+            r, g, b = hsv_to_rgb(h, 0.75, 0.92)
+            map_cls_ind_to_color[idx] = (int(r * 255), int(g * 255), int(b * 255))
+            #map_cls_ind_to_color[idx] = tuple(int(x) for x in rng.randint(0, 256, size=3))
     
     return map_cls_ind_to_color
 
